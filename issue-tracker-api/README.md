@@ -1,184 +1,229 @@
 # Issue Tracker API
 
-A REST API for tracking software issues across projects, built with **Spring Boot 3**, **Spring Security 6**, **Spring Data JPA**, and **JWT** authentication.
+A production-ready Spring Boot REST API for managing issues with full label support and label-based filtering.
+
+---
 
 ## Features
 
-- User registration & login with JWT-based authentication
-- BCrypt password hashing
-- Project CRUD (create, list, get, update, delete)
-- Issue CRUD with status (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`) and priority (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`)
-- Filter issues by project or assignee
-- Centralized error handling with consistent JSON error responses
-- Bean validation on all incoming request bodies
-- H2 in-memory database out of the box (no setup required); easy to swap for MySQL/PostgreSQL
-- CORS enabled for all origins (adjust for production)
+- Full CRUD operations for issues
+- Assign multiple labels to issues
+- Filter issues by one or more labels (AND semantics)
+- Duplicate label validation with descriptive error messages
+- Global exception handling with consistent error response format
+- Flyway database migrations
+- H2 in-memory database for development
 
-## Tech Stack
+---
 
-| Layer          | Technology                          |
-|----------------|--------------------------------------|
-| Language       | Java 17                              |
-| Framework      | Spring Boot 3.3.4                    |
-| Security       | Spring Security 6 + JWT (jjwt 0.11.5)|
-| Persistence    | Spring Data JPA / Hibernate          |
-| Database       | H2 (in-memory, dev/test)             |
-| Build tool     | Maven                                |
-| Boilerplate    | Lombok                               |
+## Technology Stack
 
-## Project Structure
+| Technology         | Version |
+|--------------------|---------|
+| Java               | 17      |
+| Spring Boot        | 3.2.0   |
+| Spring Data JPA    | 3.2.0   |
+| H2 Database        | Runtime |
+| Flyway             | 9.x     |
+| Maven              | 3.8+    |
 
-```
-issue-tracker-api/
-├── pom.xml
-├── src/main/java/com/company/issuetracker/
-│   ├── IssueTrackerApplication.java   # entry point
-│   ├── controller/                    # REST endpoints
-│   ├── service/                       # business logic
-│   ├── repository/                    # Spring Data JPA repositories
-│   ├── entity/                        # JPA entities (User, Project, Issue)
-│   ├── dto/                           # request/response payloads
-│   ├── config/                        # SecurityConfig
-│   ├── security/                      # JwtUtil, JwtAuthenticationFilter, CustomUserDetailsService
-│   └── exception/                     # ResourceNotFoundException, GlobalExceptionHandler
-└── src/main/resources/application.properties
-```
+---
 
 ## Getting Started
 
 ### Prerequisites
+
 - Java 17+
 - Maven 3.8+
 
-### Run locally
+### Build
+
+```bash
+mvn clean install
+```
+
+### Run
 
 ```bash
 mvn spring-boot:run
 ```
 
-The API will start on **http://localhost:8080**.
+API available at: `http://localhost:8080`
 
-The H2 console is available at `http://localhost:8080/h2-console`
-(JDBC URL: `jdbc:h2:mem:issuetrackerdb`, user: `sa`, password: empty).
+---
 
-### Build a jar
+## REST API Reference
 
-```bash
-mvn clean package
-java -jar target/issue-tracker-api-0.0.1-SNAPSHOT.jar
-```
+### POST /api/issues
 
-## Configuration
+Create a new issue with optional labels.
 
-Key properties in `application.properties` (all overridable via environment variables):
-
-| Property         | Env var           | Default                          |
-|------------------|--------------------|-----------------------------------|
-| `jwt.secret`     | `JWT_SECRET`       | pre-generated Base64 dev secret   |
-| `jwt.expiration` | `JWT_EXPIRATION`   | `86400000` (24 hours, in ms)      |
-| `server.port`    | `SERVER_PORT`      | `8080`                             |
-
-> ⚠️ Replace `jwt.secret` with a securely generated, private value before deploying to production.
-
-## API Reference
-
-All endpoints are prefixed with `/api`. Endpoints under `/api/auth/**` are public; everything else requires a
-`Authorization: Bearer <token>` header obtained from `/api/auth/login`.
-
-### Auth
-
-| Method | Endpoint             | Description            |
-|--------|-----------------------|-------------------------|
-| POST   | `/api/auth/register`  | Register a new user     |
-| POST   | `/api/auth/login`     | Log in, returns JWT      |
-
-**Register**
-```json
-POST /api/auth/register
-{
-  "username": "jdoe",
-  "email": "jdoe@example.com",
-  "password": "secret123"
-}
-```
-
-**Login**
-```json
-POST /api/auth/login
-{
-  "username": "jdoe",
-  "password": "secret123"
-}
-```
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tokenType": "Bearer",
-  "userId": 1,
-  "username": "jdoe",
-  "role": "USER"
-}
-```
-
-### Projects
-
-| Method | Endpoint              | Description          |
-|--------|------------------------|-----------------------|
-| POST   | `/api/projects`        | Create a project       |
-| GET    | `/api/projects`        | List all projects      |
-| GET    | `/api/projects/{id}`   | Get a project by id    |
-| PUT    | `/api/projects/{id}`   | Update a project       |
-| DELETE | `/api/projects/{id}`   | Delete a project       |
+**Request:**
 
 ```json
-POST /api/projects
 {
-  "name": "Website Redesign",
-  "description": "Revamp the marketing site"
-}
-```
-
-### Issues
-
-| Method | Endpoint                          | Description                    |
-|--------|------------------------------------|----------------------------------|
-| POST   | `/api/issues`                      | Create an issue                  |
-| GET    | `/api/issues`                      | List all issues                  |
-| GET    | `/api/issues/{id}`                 | Get an issue by id                |
-| GET    | `/api/issues/project/{projectId}`  | List issues for a project         |
-| GET    | `/api/issues/assignee/{assigneeId}`| List issues assigned to a user    |
-| PUT    | `/api/issues/{id}`                 | Update an issue                  |
-| DELETE | `/api/issues/{id}`                 | Delete an issue                  |
-
-```json
-POST /api/issues
-{
-  "title": "Login page throws 500",
-  "description": "Stack trace attached in ticket #123",
+  "title": "Fix authentication bug",
+  "description": "Users cannot authenticate using SSO",
   "status": "OPEN",
   "priority": "HIGH",
-  "projectId": 1,
-  "assigneeId": 2
+  "labels": ["bug", "backend", "authentication"]
 }
 ```
 
-## Error Response Format
+**Response:** `201 Created`
 
 ```json
 {
-  "timestamp": "2026-07-30T10:15:30",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Project not found with id: 99"
+  "id": 1,
+  "title": "Fix authentication bug",
+  "description": "Users cannot authenticate using SSO",
+  "status": "OPEN",
+  "priority": "HIGH",
+  "labels": ["bug", "backend", "authentication"],
+  "createdAt": "2024-01-01T10:00:00",
+  "updatedAt": "2024-01-01T10:00:00"
 }
 ```
 
-Validation errors additionally include an `errors` map of field -> message.
+---
 
-## Notes / Next Steps
+### GET /api/issues/{id}
 
-- Swap H2 for MySQL/PostgreSQL by updating `spring.datasource.*` properties and adding the relevant driver dependency to `pom.xml`.
-- Add role-based method security (`@PreAuthorize`) if you need to restrict certain endpoints (e.g. only `ADMIN` can delete projects).
-- Add pagination (`Pageable`) to the list endpoints for large datasets.
-- Add refresh tokens if longer-lived sessions are needed.
+Retrieve a single issue by ID. Labels are included in the response.
+
+**Response:** `200 OK`
+
+---
+
+### GET /api/issues
+
+Retrieve all issues. Supports optional label filtering.
+
+| Query Parameter | Description                          | Example                              |
+|-----------------|--------------------------------------|--------------------------------------|
+| `label`         | Filter by label (repeatable for AND) | `?label=backend&label=urgent`        |
+
+**Examples:**
+
+```
+GET /api/issues
+GET /api/issues?label=backend
+GET /api/issues?label=backend&label=urgent
+```
+
+**Response:** `200 OK` — list of matching issues.
+
+---
+
+### PUT /api/issues/{id}
+
+Update an existing issue. Supports adding, removing, or replacing labels.
+
+**Request:**
+
+```json
+{
+  "title": "Fix authentication bug",
+  "description": "Updated description",
+  "status": "IN_PROGRESS",
+  "priority": "HIGH",
+  "labels": ["bug", "backend"]
+}
+```
+
+**Response:** `200 OK`
+
+---
+
+### DELETE /api/issues/{id}
+
+Delete an issue by ID.
+
+**Response:** `204 No Content`
+
+---
+
+## Label Rules
+
+- Labels are optional when creating or updating an issue.
+- Multiple labels can be assigned to a single issue.
+- Duplicate labels in the same request are rejected with `400 Bad Request`.
+- When filtering by multiple labels, AND semantics apply — only issues containing **all** specified labels are returned.
+
+---
+
+## Error Handling
+
+All errors follow a consistent response format:
+
+```json
+{
+  "timestamp": "2024-01-01T10:00:00",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Duplicate labels are not allowed. Please provide unique labels only."
+}
+```
+
+| HTTP Status | Scenario                                    |
+|-------------|---------------------------------------------|
+| 400         | Validation failure or duplicate labels      |
+| 404         | Issue not found                             |
+| 500         | Unexpected server error                     |
+
+---
+
+## Database
+
+Uses H2 in-memory database with Flyway migrations.
+
+**H2 Console:** `http://localhost:8080/h2-console`
+
+- JDBC URL: `jdbc:h2:mem:issuetracker`
+- Username: `sa`
+- Password: *(empty)*
+
+### Schema
+
+```sql
+CREATE TABLE issues (
+    id          BIGINT       NOT NULL AUTO_INCREMENT,
+    title       VARCHAR(255) NOT NULL,
+    description VARCHAR(5000),
+    status      VARCHAR(50)  NOT NULL,
+    priority    VARCHAR(50),
+    created_at  DATETIME     NOT NULL,
+    updated_at  DATETIME     NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE issue_labels (
+    issue_id BIGINT       NOT NULL,
+    label    VARCHAR(100) NOT NULL,
+    FOREIGN KEY (issue_id) REFERENCES issues(id) ON DELETE CASCADE
+);
+```
+
+---
+
+## Project Structure
+
+```
+src/main/java/com/company/issuetracker/
+├── IssueTrackerApiApplication.java
+├── controller/
+│   └── IssueController.java
+├── service/
+│   └── IssueService.java
+├── repository/
+│   └── IssueRepository.java
+├── entity/
+│   └── Issue.java
+├── dto/
+│   ├── IssueRequestDTO.java
+│   └── IssueResponseDTO.java
+└── exception/
+    ├── IssueNotFoundException.java
+    ├── DuplicateLabelException.java
+    └── GlobalExceptionHandler.java
+```
