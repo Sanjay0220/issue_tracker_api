@@ -1,107 +1,139 @@
-# Issue Tracker API - Developer Documentation
+# Issue Tracker API — Developer Guide
 
-This document provides detailed API documentation for the Issue Tracker REST API, including the new Issue Comments feature.
+This document provides technical documentation for the Issue Tracker API, including entity structures, API endpoint specifications, request/response formats, validation rules, and backward compatibility notes.
 
-## Base URL
+## Project Structure
 
 ```
-http://localhost:8080/api
+issue-tracker-api/
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── com/issuetracker/
+│       │       ├── controller/
+│       │       │   └── CommentController.java
+│       │       ├── dto/
+│       │       │   ├── CommentRequestDTO.java
+│       │       │   └── CommentResponseDTO.java
+│       │       ├── entity/
+│       │       │   └── Comment.java
+│       │       ├── exception/
+│       │       │   └── EmptyCommentException.java
+│       │       ├── repository/
+│       │       │   └── CommentRepository.java
+│       │       └── service/
+│       │           └── CommentService.java
+│       └── resources/
+│           └── application.properties
+└── pom.xml
 ```
 
-## Issue Comments Feature
+## Comment Feature
 
-The Issue Comments feature allows project team members to collaborate, discuss progress, and provide updates directly within an issue. Comments are associated with a single issue, displayed in chronological order, and require a non-empty comment text and author.
+### Overview
 
----
+The comment feature enables project team members to collaborate directly within issues. Comments are associated with a single issue, captured with author, timestamp, and comment text, and displayed in chronological order.
 
-## Comment Endpoints
+### Comment Entity
+
+| Field | Column | Type | Constraints |
+|-------|--------|------|-------------|
+| id | id | BIGINT | Primary Key, Auto-generated |
+| text | text | TEXT | NOT NULL, non-empty |
+| author | author | VARCHAR(255) | NOT NULL, non-empty |
+| createdAt | created_at | TIMESTAMP | NOT NULL, set on persist |
+| issueId | issue_id | BIGINT | NOT NULL, references Issue |
+
+### Database Schema
+
+```sql
+CREATE TABLE comments (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    text TEXT NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL,
+    issue_id BIGINT NOT NULL
+);
+
+CREATE INDEX idx_comment_issue_id ON comments (issue_id);
+CREATE INDEX idx_comment_created_at ON comments (created_at);
+```
+
+## API Endpoints
 
 ### POST /api/issues/{issueId}/comments
 
-Adds a new comment to the specified issue.
+Creates a new comment on the specified issue.
 
-**Path Parameters**
+**Path Parameters:**
+- `issueId` (Long, required) — the ID of the issue
 
-| Parameter | Type | Required | Description              |
-|-----------|------|----------|--------------------------||
-| issueId   | Long | Yes      | The ID of the issue      |
-
-**Request Body**
-
+**Request Body:**
 ```json
 {
   "text": "This is a comment on the issue.",
-  "author": "Jane Doe"
+  "author": "john.doe"
 }
 ```
 
-| Field  | Type   | Required | Validation              | Description              |
-|--------|--------|----------|-------------------------|--------------------------||
-| text   | String | Yes      | Must not be blank       | The comment text         |
-| author | String | Yes      | Must not be blank       | The author of the comment|
+**Validation:**
+- `text` — required, must not be blank or empty
+- `author` — required, must not be blank or empty
 
-**Response - 201 Created**
+**Responses:**
 
+| Status | Description |
+|--------|-------------|
+| 201 Created | Comment created successfully |
+| 400 Bad Request | Validation failure (empty text or author) |
+| 500 Internal Server Error | Unexpected server error |
+
+**Response Body (201):**
 ```json
 {
   "id": 1,
   "text": "This is a comment on the issue.",
-  "author": "Jane Doe",
-  "createdAt": "2026-08-04T10:30:00",
+  "author": "john.doe",
+  "createdAt": "2024-01-15T10:30:00",
   "issueId": 42
 }
 ```
-
-**Response - 400 Bad Request**
-
-Returned when the comment text or author is empty or blank.
-
-```json
-"Comment text must not be empty"
-```
-
-**Response - 500 Internal Server Error**
-
-Returned when an unexpected server error occurs.
 
 ---
 
 ### GET /api/issues/{issueId}/comments
 
-Retrieves all comments for the specified issue in chronological order (oldest first).
+Retrieves all comments for the specified issue in chronological order (ascending by `createdAt`).
 
-**Path Parameters**
+**Path Parameters:**
+- `issueId` (Long, required) — the ID of the issue
 
-| Parameter | Type | Required | Description              |
-|-----------|------|----------|--------------------------||
-| issueId   | Long | Yes      | The ID of the issue      |
+**Responses:**
 
-**Response - 200 OK**
+| Status | Description |
+|--------|-------------|
+| 200 OK | List of comments returned (may be empty) |
+| 500 Internal Server Error | Unexpected server error |
 
+**Response Body (200):**
 ```json
 [
   {
     "id": 1,
-    "text": "First comment on this issue.",
-    "author": "Alice",
-    "createdAt": "2026-08-04T09:00:00",
+    "text": "First comment.",
+    "author": "alice",
+    "createdAt": "2024-01-15T08:00:00",
     "issueId": 42
   },
   {
     "id": 2,
-    "text": "Second comment with an update.",
-    "author": "Bob",
-    "createdAt": "2026-08-04T10:30:00",
+    "text": "Second comment.",
+    "author": "bob",
+    "createdAt": "2024-01-15T09:30:00",
     "issueId": 42
   }
 ]
 ```
-
-Returns an empty array `[]` if no comments exist for the issue.
-
-**Response - 500 Internal Server Error**
-
-Returned when an unexpected server error occurs.
 
 ---
 
@@ -109,81 +141,60 @@ Returned when an unexpected server error occurs.
 
 Retrieves a specific comment by its unique ID.
 
-**Path Parameters**
+**Path Parameters:**
+- `commentId` (Long, required) — the ID of the comment
 
-| Parameter | Type | Required | Description              |
-|-----------|------|----------|--------------------------||
-| commentId | Long | Yes      | The ID of the comment    |
+**Responses:**
 
-**Response - 200 OK**
+| Status | Description |
+|--------|-------------|
+| 200 OK | Comment found and returned |
+| 404 Not Found | No comment exists with the given ID |
+| 500 Internal Server Error | Unexpected server error |
 
+**Response Body (200):**
 ```json
 {
   "id": 1,
-  "text": "This is a comment on the issue.",
-  "author": "Jane Doe",
-  "createdAt": "2026-08-04T10:30:00",
+  "text": "First comment.",
+  "author": "alice",
+  "createdAt": "2024-01-15T08:00:00",
   "issueId": 42
 }
 ```
-
-**Response - 404 Not Found**
-
-Returned when no comment exists with the given ID.
-
-```json
-"Comment not found with ID: 1"
-```
-
-**Response - 500 Internal Server Error**
-
-Returned when an unexpected server error occurs.
-
----
-
-## Comment Data Model
-
-| Field     | Type          | Description                                      |
-|-----------|---------------|--------------------------------------------------|
-| id        | Long          | Unique identifier for the comment (auto-generated) |
-| text      | String        | The content of the comment (must not be empty)   |
-| author    | String        | The name of the person who wrote the comment     |
-| createdAt | LocalDateTime | The timestamp when the comment was created (UTC) |
-| issueId   | Long          | The ID of the issue this comment belongs to      |
 
 ---
 
 ## Validation Rules
 
-- `text` must not be null, empty, or blank.
-- `author` must not be null, empty, or blank.
-- A comment must be associated with a valid `issueId`.
-
----
-
-## Ordering
-
-Comments are always returned in **chronological order** (ascending by `createdAt` timestamp) when retrieved via `GET /api/issues/{issueId}/comments`.
-
----
+| Field | Rule | Error |
+|-------|------|-------|
+| text | Must not be null, blank, or empty | 400 Bad Request |
+| author | Must not be null, blank, or empty | 400 Bad Request |
 
 ## Backward Compatibility
 
-All existing Issue API endpoints remain fully backward compatible. No changes have been made to existing Issue request/response contracts.
+The introduction of the comment feature does not modify any existing Issue API endpoints. All existing Issue request and response structures remain unchanged. The `comments` table is a new addition to the database schema and does not alter existing tables.
 
----
+## Chronological Ordering
 
-## Database Schema
+Comments are always returned in ascending order of their `created_at` timestamp. This is enforced at the repository layer via `findByIssueIdOrderByCreatedAtAsc`.
 
-```sql
-CREATE TABLE comments (
-    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
-    text       TEXT          NOT NULL,
-    author     VARCHAR(255)  NOT NULL,
-    created_at TIMESTAMP     NOT NULL,
-    issue_id   BIGINT        NOT NULL
-);
+## Error Handling
 
-CREATE INDEX idx_comment_issue_id  ON comments (issue_id);
-CREATE INDEX idx_comment_created_at ON comments (created_at);
+| Exception | HTTP Status | Description |
+|-----------|-------------|-------------|
+| EmptyCommentException | 400 Bad Request | Comment text is blank or empty |
+| IllegalArgumentException | 400 Bad Request | Author is blank or empty |
+| NoSuchElementException | 404 Not Found | Comment not found by ID |
+| Exception | 500 Internal Server Error | Unexpected server error |
+
+## Configuration
+
+Key properties in `application.properties`:
+
+```properties
+spring.jpa.hibernate.ddl-auto=update
+spring.datasource.url=jdbc:h2:mem:issuetracker
+logging.level.com.issuetracker=INFO
 ```

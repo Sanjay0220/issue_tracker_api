@@ -1,66 +1,40 @@
-package com.issuetracker.entity;
+package com.issuetracker.dto;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 /**
- * Entity representing a comment associated with an issue.
- * Each comment captures the author, timestamp, and comment text,
- * and is associated with exactly one issue.
+ * Data Transfer Object for returning comment data to the client.
+ * Includes the comment ID, text, author, timestamp, and associated issue ID.
  */
-@Entity
-@Table(name = "comments", indexes = {
-        @Index(name = "idx_comment_issue_id", columnList = "issue_id"),
-        @Index(name = "idx_comment_created_at", columnList = "created_at")
-})
-public class Comment {
+public class CommentResponseDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank(message = "Comment text must not be empty")
-    @Column(name = "text", nullable = false, columnDefinition = "TEXT")
     private String text;
-
-    @NotBlank(message = "Author must not be empty")
-    @Column(name = "author", nullable = false)
     private String author;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @NotNull(message = "Issue ID must not be null")
-    @Column(name = "issue_id", nullable = false)
     private Long issueId;
 
     /**
-     * Default constructor required by JPA.
+     * Default constructor.
      */
-    public Comment() {
+    public CommentResponseDTO() {
     }
 
     /**
-     * Constructs a Comment with all required fields.
+     * Constructs a CommentResponseDTO with all fields.
      *
-     * @param text    the comment text
-     * @param author  the author of the comment
-     * @param issueId the ID of the issue this comment belongs to
+     * @param id        the comment ID
+     * @param text      the comment text
+     * @param author    the author of the comment
+     * @param createdAt the timestamp when the comment was created
+     * @param issueId   the ID of the issue this comment belongs to
      */
-    public Comment(String text, String author, Long issueId) {
+    public CommentResponseDTO(Long id, String text, String author, LocalDateTime createdAt, Long issueId) {
+        this.id = id;
         this.text = text;
         this.author = author;
+        this.createdAt = createdAt;
         this.issueId = issueId;
-    }
-
-    /**
-     * Sets the createdAt timestamp before persisting.
-     */
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
     }
 
     /**

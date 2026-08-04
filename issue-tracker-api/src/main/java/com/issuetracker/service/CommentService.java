@@ -1,7 +1,7 @@
 package com.issuetracker.service;
 
-import com.issuetracker.dto.CommentDTO;
-import com.issuetracker.dto.CreateCommentRequest;
+import com.issuetracker.dto.CommentRequestDTO;
+import com.issuetracker.dto.CommentResponseDTO;
 import com.issuetracker.entity.Comment;
 import com.issuetracker.exception.EmptyCommentException;
 import com.issuetracker.repository.CommentRepository;
@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 /**
- * Service class responsible for business logic related to issue comments.
+ * Service class responsible for comment business logic.
  * Handles creation and retrieval of comments associated with issues.
  */
 @Service
@@ -28,56 +28,62 @@ public class CommentService {
     /**
      * Constructs a CommentService with the required repository dependency.
      *
-     * @param commentRepository the repository for comment persistence operations
+     * @param commentRepository the repository for comment persistence
      */
     public CommentService(CommentRepository commentRepository) {
         this.commentRepository = commentRepository;
     }
 
     /**
-     * Adds a new comment to the specified issue.
+     * Creates a new comment on the specified issue.
+     * Validates that the comment text is not empty before persisting.
      *
-     * @param issueId the ID of the issue to which the comment is being added
-     * @param request the request DTO containing comment text and author
-     * @return a CommentDTO representing the persisted comment
-     * @throws EmptyCommentException if the comment text is null or blank
+     * @param issueId           the ID of the issue to add the comment to
+     * @param commentRequestDTO the request DTO containing comment text and author
+     * @return the created comment as a response DTO
+     * @throws EmptyCommentException if the comment text is blank or empty
      */
     @Transactional
-    public CommentDTO addComment(Long issueId, CreateCommentRequest request) {
-        logger.info("Adding comment to issue with ID: {}", issueId);
+    public CommentResponseDTO createComment(Long issueId, CommentRequestDTO commentRequestDTO) {
+        logger.info("Creating comment for issueId={}, author={}", issueId, commentRequestDTO.getAuthor());
 
-        if (request.getText() == null || request.getText().trim().isEmpty()) {
-            logger.warn("Attempt to add empty comment to issue with ID: {}", issueId);
+        if (commentRequestDTO.getText() == null || commentRequestDTO.getText().trim().isEmpty()) {
+            logger.warn("Attempted to create an empty comment for issueId={}", issueId);
             throw new EmptyCommentException("Comment text must not be empty");
         }
 
-        if (request.getAuthor() == null || request.getAuthor().trim().isEmpty()) {
-            logger.warn("Attempt to add comment with empty author to issue with ID: {}", issueId);
+        if (commentRequestDTO.getAuthor() == null || commentRequestDTO.getAuthor().trim().isEmpty()) {
+            logger.warn("Attempted to create a comment with empty author for issueId={}", issueId);
             throw new IllegalArgumentException("Author must not be empty");
         }
 
-        Comment comment = new Comment(request.getText().trim(), request.getAuthor().trim(), issueId);
-        Comment savedComment = commentRepository.save(comment);
+        Comment comment = new Comment(
+                commentRequestDTO.getText().trim(),
+                commentRequestDTO.getAuthor().trim(),
+                issueId
+        );
 
-        logger.info("Comment with ID: {} successfully added to issue with ID: {}", savedComment.getId(), issueId);
-        return mapToDTO(savedComment);
+        Comment savedComment = commentRepository.save(comment);
+        logger.info("Comment created successfully with id={} for issueId={}", savedComment.getId(), issueId);
+
+        return mapToResponseDTO(savedComment);
     }
 
     /**
      * Retrieves all comments for the specified issue in chronological order.
      *
-     * @param issueId the ID of the issue whose comments are to be retrieved
-     * @return a list of CommentDTOs ordered by creation timestamp ascending
+     * @param issueId the ID of the issue
+     * @return list of comment response DTOs ordered by creation timestamp ascending
      */
     @Transactional(readOnly = true)
-    public List<CommentDTO> getCommentsByIssueId(Long issueId) {
-        logger.info("Retrieving comments for issue with ID: {}", issueId);
+    public List<CommentResponseDTO> getCommentsByIssueId(Long issueId) {
+        logger.info("Retrieving comments for issueId={}", issueId);
 
         List<Comment> comments = commentRepository.findByIssueIdOrderByCreatedAtAsc(issueId);
+        logger.info("Found {} comment(s) for issueId={}", comments.size(), issueId);
 
-        logger.info("Found {} comment(s) for issue with ID: {}", comments.size(), issueId);
         return comments.stream()
-                .map(this::mapToDTO)
+                .map(this::mapToResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -85,31 +91,31 @@ public class CommentService {
      * Retrieves a specific comment by its ID.
      *
      * @param commentId the ID of the comment to retrieve
-     * @return a CommentDTO representing the found comment
-     * @throws NoSuchElementException if no comment with the given ID exists
+     * @return the comment response DTO
+     * @throws NoSuchElementException if no comment exists with the given ID
      */
     @Transactional(readOnly = true)
-    public CommentDTO getCommentById(Long commentId) {
-        logger.info("Retrieving comment with ID: {}", commentId);
+    public CommentResponseDTO getCommentById(Long commentId) {
+        logger.info("Retrieving comment with id={}", commentId);
 
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> {
-                    logger.warn("Comment with ID: {} not found", commentId);
-                    return new NoSuchElementException("Comment not found with ID: " + commentId);
+                    logger.warn("Comment not found with id={}", commentId);
+                    return new NoSuchElementException("Comment not found with id: " + commentId);
                 });
 
-        logger.info("Comment with ID: {} successfully retrieved", commentId);
-        return mapToDTO(comment);
+        logger.info("Comment retrieved successfully with id={}", commentId);
+        return mapToResponseDTO(comment);
     }
 
     /**
-     * Maps a Comment entity to a CommentDTO.
+     * Maps a Comment entity to a CommentResponseDTO.
      *
-     * @param comment the Comment entity to map
-     * @return the corresponding CommentDTO
+     * @param comment the comment entity
+     * @return the corresponding response DTO
      */
-    private CommentDTO mapToDTO(Comment comment) {
-        return new CommentDTO(
+    private CommentResponseDTO mapToResponseDTO(Comment comment) {
+        return new CommentResponseDTO(
                 comment.getId(),
                 comment.getText(),
                 comment.getAuthor(),
