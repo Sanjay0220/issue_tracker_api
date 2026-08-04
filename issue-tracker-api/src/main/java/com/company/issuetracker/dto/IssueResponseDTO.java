@@ -1,91 +1,53 @@
-package com.company.issuetracker.entity;
-
-import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+package com.company.issuetracker.dto;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
- * JPA Entity representing an Issue in the Issue Tracker system.
- * Supports multiple labels stored as an element collection.
+ * Data Transfer Object for returning Issue data in API responses.
+ * Includes the labels field so clients can see all labels attached to an issue.
  */
-@Entity
-@Table(name = "issues")
-public class Issue {
+public class IssueResponseDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank(message = "Title must not be blank")
-    @Size(max = 255, message = "Title must not exceed 255 characters")
-    @Column(name = "title", nullable = false, length = 255)
     private String title;
-
-    @Size(max = 5000, message = "Description must not exceed 5000 characters")
-    @Column(name = "description", length = 5000)
     private String description;
-
-    @NotBlank(message = "Status must not be blank")
-    @Size(max = 50, message = "Status must not exceed 50 characters")
-    @Column(name = "status", nullable = false, length = 50)
     private String status;
-
-    @Size(max = 50, message = "Priority must not exceed 50 characters")
-    @Column(name = "priority", length = 50)
     private String priority;
-
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "issue_labels",
-            joinColumns = @JoinColumn(name = "issue_id")
-    )
-    @Column(name = "label", nullable = false, length = 100)
     private Set<String> labels = new HashSet<>();
-
-    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
     /**
-     * Default constructor required by JPA.
+     * Default constructor.
      */
-    public Issue() {
+    public IssueResponseDTO() {
     }
 
     /**
-     * Constructs an Issue with all required fields.
+     * Constructs an IssueResponseDTO with all fields.
      *
+     * @param id          the issue ID
      * @param title       the issue title
      * @param description the issue description
      * @param status      the issue status
      * @param priority    the issue priority
      * @param labels      the set of labels
+     * @param createdAt   the creation timestamp
+     * @param updatedAt   the last update timestamp
      */
-    public Issue(String title, String description, String status, String priority, Set<String> labels) {
+    public IssueResponseDTO(Long id, String title, String description, String status,
+                             String priority, Set<String> labels,
+                             LocalDateTime createdAt, LocalDateTime updatedAt) {
+        this.id = id;
         this.title = title;
         this.description = description;
         this.status = status;
         this.priority = priority;
         this.labels = labels != null ? new HashSet<>(labels) : new HashSet<>();
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public Long getId() {

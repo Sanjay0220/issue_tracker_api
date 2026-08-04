@@ -1,67 +1,46 @@
-package com.company.issuetracker.entity;
+package com.company.issuetracker.dto;
 
-import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 /**
- * JPA Entity representing an Issue in the Issue Tracker system.
- * Supports multiple labels stored as an element collection.
+ * Data Transfer Object for creating and updating an Issue.
+ * Supports an optional set of labels. Duplicate label validation
+ * is enforced at the service layer.
  */
-@Entity
-@Table(name = "issues")
-public class Issue {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class IssueRequestDTO {
 
     @NotBlank(message = "Title must not be blank")
     @Size(max = 255, message = "Title must not exceed 255 characters")
-    @Column(name = "title", nullable = false, length = 255)
     private String title;
 
     @Size(max = 5000, message = "Description must not exceed 5000 characters")
-    @Column(name = "description", length = 5000)
     private String description;
 
     @NotBlank(message = "Status must not be blank")
     @Size(max = 50, message = "Status must not exceed 50 characters")
-    @Column(name = "status", nullable = false, length = 50)
     private String status;
 
     @Size(max = 50, message = "Priority must not exceed 50 characters")
-    @Column(name = "priority", length = 50)
     private String priority;
 
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(
-            name = "issue_labels",
-            joinColumns = @JoinColumn(name = "issue_id")
-    )
-    @Column(name = "label", nullable = false, length = 100)
+    /**
+     * Optional set of labels to assign to the issue.
+     * Duplicate labels are rejected at the service layer.
+     */
     private Set<String> labels = new HashSet<>();
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-
     /**
-     * Default constructor required by JPA.
+     * Default constructor.
      */
-    public Issue() {
+    public IssueRequestDTO() {
     }
 
     /**
-     * Constructs an Issue with all required fields.
+     * Constructs an IssueRequestDTO with all fields.
      *
      * @param title       the issue title
      * @param description the issue description
@@ -69,31 +48,12 @@ public class Issue {
      * @param priority    the issue priority
      * @param labels      the set of labels
      */
-    public Issue(String title, String description, String status, String priority, Set<String> labels) {
+    public IssueRequestDTO(String title, String description, String status, String priority, Set<String> labels) {
         this.title = title;
         this.description = description;
         this.status = status;
         this.priority = priority;
         this.labels = labels != null ? new HashSet<>(labels) : new HashSet<>();
-    }
-
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
     }
 
     public String getTitle() {
@@ -134,21 +94,5 @@ public class Issue {
 
     public void setLabels(Set<String> labels) {
         this.labels = labels != null ? new HashSet<>(labels) : new HashSet<>();
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
     }
 }
