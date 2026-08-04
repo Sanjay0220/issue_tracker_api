@@ -1,48 +1,54 @@
-# Implementation in java
+# Issue Tracker API
 
-User Stories:
-As a project team member,
+A Spring Boot REST API for tracking and managing issues, enabling teams to create, update, assign, close, and now comment on issues for improved collaboration.
 
-I want to add comments to an issue,
+## Features
 
-So that team members can collaborate, discuss progress, and provide updates without using external communication channels.
+- Create, update, assign, and close issues
+- Add comments to issues for team collaboration
+- Retrieve comments in chronological order
+- Validation to prevent empty comments
+- Backward-compatible Issue APIs
 
-Currently, the Issue Tracker application allows users to create, update, assign, and close issues. However, there is no mechanism for users to communicate directly within an issue.
+## Technology Stack
 
-The new feature should introduce comments that are associated with an issue and visible to all authenticated users with access to that issue.
+- Java
+- Spring Boot
+- Spring Data JPA
+- Maven
+- H2 (in-memory database for development)
 
-Each comment should capture the author, timestamp, and comment text.
+## Getting Started
 
-Comments should be displayed in chronological order.
+### Prerequisites
 
-The existing Issue APIs should remain backward compatible.
+- Java 17 or higher
+- Maven 3.6 or higher
 
-The repository should also be updated with documentation describing the new API endpoints.
+### Build and Run
 
+```bash
+cd issue-tracker-api
+mvn clean install
+mvn spring-boot:run
+```
 
+The application will start on `http://localhost:8080`.
 
-Acceptance Criteria
+## API Endpoints
 
-Users can add one or more comments to an existing issue.
+### Issues
 
-Every comment must contain:
+Refer to [issue-tracker-api/README.md](issue-tracker-api/README.md) for full API documentation.
 
-Author
+### Comments
 
-Timestamp
+| Method | Endpoint                              | Description                                      |
+|--------|---------------------------------------|--------------------------------------------------|
+| POST   | `/api/issues/{issueId}/comments`      | Add a new comment to an issue                    |
+| GET    | `/api/issues/{issueId}/comments`      | Retrieve all comments for an issue (chronological) |
+| GET    | `/api/comments/{commentId}`           | Retrieve a specific comment by ID                |
 
-Comment Text
+## Documentation
 
-Comments must be associated with exactly one Issue.
-
-Comments must be displayed in chronological order.
-
-Existing Issue APIs must continue to function without breaking changes.
-
-Validation should prevent empty comments.
-
-Documentation must be updated to include the new feature.
-
-Unit tests are not required because testing will be handled by CI.
-
-// TODO: Implement the code generation logic here.
+Full API documentation is available in [issue-tracker-api/README.md](issue-tracker-api/README.md).

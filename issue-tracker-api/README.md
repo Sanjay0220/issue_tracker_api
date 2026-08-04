@@ -1,184 +1,189 @@
-# Issue Tracker API
+# Issue Tracker API - Developer Documentation
 
-A REST API for tracking software issues across projects, built with **Spring Boot 3**, **Spring Security 6**, **Spring Data JPA**, and **JWT** authentication.
+This document provides detailed API documentation for the Issue Tracker REST API, including the new Issue Comments feature.
 
-## Features
-
-- User registration & login with JWT-based authentication
-- BCrypt password hashing
-- Project CRUD (create, list, get, update, delete)
-- Issue CRUD with status (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CLOSED`) and priority (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`)
-- Filter issues by project or assignee
-- Centralized error handling with consistent JSON error responses
-- Bean validation on all incoming request bodies
-- H2 in-memory database out of the box (no setup required); easy to swap for MySQL/PostgreSQL
-- CORS enabled for all origins (adjust for production)
-
-## Tech Stack
-
-| Layer          | Technology                          |
-|----------------|--------------------------------------|
-| Language       | Java 17                              |
-| Framework      | Spring Boot 3.3.4                    |
-| Security       | Spring Security 6 + JWT (jjwt 0.11.5)|
-| Persistence    | Spring Data JPA / Hibernate          |
-| Database       | H2 (in-memory, dev/test)             |
-| Build tool     | Maven                                |
-| Boilerplate    | Lombok                               |
-
-## Project Structure
+## Base URL
 
 ```
-issue-tracker-api/
-├── pom.xml
-├── src/main/java/com/company/issuetracker/
-│   ├── IssueTrackerApplication.java   # entry point
-│   ├── controller/                    # REST endpoints
-│   ├── service/                       # business logic
-│   ├── repository/                    # Spring Data JPA repositories
-│   ├── entity/                        # JPA entities (User, Project, Issue)
-│   ├── dto/                           # request/response payloads
-│   ├── config/                        # SecurityConfig
-│   ├── security/                      # JwtUtil, JwtAuthenticationFilter, CustomUserDetailsService
-│   └── exception/                     # ResourceNotFoundException, GlobalExceptionHandler
-└── src/main/resources/application.properties
+http://localhost:8080/api
 ```
 
-## Getting Started
+## Issue Comments Feature
 
-### Prerequisites
-- Java 17+
-- Maven 3.8+
+The Issue Comments feature allows project team members to collaborate, discuss progress, and provide updates directly within an issue. Comments are associated with a single issue, displayed in chronological order, and require a non-empty comment text and author.
 
-### Run locally
+---
 
-```bash
-mvn spring-boot:run
-```
+## Comment Endpoints
 
-The API will start on **http://localhost:8080**.
+### POST /api/issues/{issueId}/comments
 
-The H2 console is available at `http://localhost:8080/h2-console`
-(JDBC URL: `jdbc:h2:mem:issuetrackerdb`, user: `sa`, password: empty).
+Adds a new comment to the specified issue.
 
-### Build a jar
+**Path Parameters**
 
-```bash
-mvn clean package
-java -jar target/issue-tracker-api-0.0.1-SNAPSHOT.jar
-```
+| Parameter | Type | Required | Description              |
+|-----------|------|----------|--------------------------||
+| issueId   | Long | Yes      | The ID of the issue      |
 
-## Configuration
-
-Key properties in `application.properties` (all overridable via environment variables):
-
-| Property         | Env var           | Default                          |
-|------------------|--------------------|-----------------------------------|
-| `jwt.secret`     | `JWT_SECRET`       | pre-generated Base64 dev secret   |
-| `jwt.expiration` | `JWT_EXPIRATION`   | `86400000` (24 hours, in ms)      |
-| `server.port`    | `SERVER_PORT`      | `8080`                             |
-
-> ⚠️ Replace `jwt.secret` with a securely generated, private value before deploying to production.
-
-## API Reference
-
-All endpoints are prefixed with `/api`. Endpoints under `/api/auth/**` are public; everything else requires a
-`Authorization: Bearer <token>` header obtained from `/api/auth/login`.
-
-### Auth
-
-| Method | Endpoint             | Description            |
-|--------|-----------------------|-------------------------|
-| POST   | `/api/auth/register`  | Register a new user     |
-| POST   | `/api/auth/login`     | Log in, returns JWT      |
-
-**Register**
-```json
-POST /api/auth/register
-{
-  "username": "jdoe",
-  "email": "jdoe@example.com",
-  "password": "secret123"
-}
-```
-
-**Login**
-```json
-POST /api/auth/login
-{
-  "username": "jdoe",
-  "password": "secret123"
-}
-```
-Response:
-```json
-{
-  "token": "eyJhbGciOiJIUzI1NiJ9...",
-  "tokenType": "Bearer",
-  "userId": 1,
-  "username": "jdoe",
-  "role": "USER"
-}
-```
-
-### Projects
-
-| Method | Endpoint              | Description          |
-|--------|------------------------|-----------------------|
-| POST   | `/api/projects`        | Create a project       |
-| GET    | `/api/projects`        | List all projects      |
-| GET    | `/api/projects/{id}`   | Get a project by id    |
-| PUT    | `/api/projects/{id}`   | Update a project       |
-| DELETE | `/api/projects/{id}`   | Delete a project       |
-
-```json
-POST /api/projects
-{
-  "name": "Website Redesign",
-  "description": "Revamp the marketing site"
-}
-```
-
-### Issues
-
-| Method | Endpoint                          | Description                    |
-|--------|------------------------------------|----------------------------------|
-| POST   | `/api/issues`                      | Create an issue                  |
-| GET    | `/api/issues`                      | List all issues                  |
-| GET    | `/api/issues/{id}`                 | Get an issue by id                |
-| GET    | `/api/issues/project/{projectId}`  | List issues for a project         |
-| GET    | `/api/issues/assignee/{assigneeId}`| List issues assigned to a user    |
-| PUT    | `/api/issues/{id}`                 | Update an issue                  |
-| DELETE | `/api/issues/{id}`                 | Delete an issue                  |
-
-```json
-POST /api/issues
-{
-  "title": "Login page throws 500",
-  "description": "Stack trace attached in ticket #123",
-  "status": "OPEN",
-  "priority": "HIGH",
-  "projectId": 1,
-  "assigneeId": 2
-}
-```
-
-## Error Response Format
+**Request Body**
 
 ```json
 {
-  "timestamp": "2026-07-30T10:15:30",
-  "status": 404,
-  "error": "Not Found",
-  "message": "Project not found with id: 99"
+  "text": "This is a comment on the issue.",
+  "author": "Jane Doe"
 }
 ```
 
-Validation errors additionally include an `errors` map of field -> message.
+| Field  | Type   | Required | Validation              | Description              |
+|--------|--------|----------|-------------------------|--------------------------||
+| text   | String | Yes      | Must not be blank       | The comment text         |
+| author | String | Yes      | Must not be blank       | The author of the comment|
 
-## Notes / Next Steps
+**Response - 201 Created**
 
-- Swap H2 for MySQL/PostgreSQL by updating `spring.datasource.*` properties and adding the relevant driver dependency to `pom.xml`.
-- Add role-based method security (`@PreAuthorize`) if you need to restrict certain endpoints (e.g. only `ADMIN` can delete projects).
-- Add pagination (`Pageable`) to the list endpoints for large datasets.
-- Add refresh tokens if longer-lived sessions are needed.
+```json
+{
+  "id": 1,
+  "text": "This is a comment on the issue.",
+  "author": "Jane Doe",
+  "createdAt": "2026-08-04T10:30:00",
+  "issueId": 42
+}
+```
+
+**Response - 400 Bad Request**
+
+Returned when the comment text or author is empty or blank.
+
+```json
+"Comment text must not be empty"
+```
+
+**Response - 500 Internal Server Error**
+
+Returned when an unexpected server error occurs.
+
+---
+
+### GET /api/issues/{issueId}/comments
+
+Retrieves all comments for the specified issue in chronological order (oldest first).
+
+**Path Parameters**
+
+| Parameter | Type | Required | Description              |
+|-----------|------|----------|--------------------------||
+| issueId   | Long | Yes      | The ID of the issue      |
+
+**Response - 200 OK**
+
+```json
+[
+  {
+    "id": 1,
+    "text": "First comment on this issue.",
+    "author": "Alice",
+    "createdAt": "2026-08-04T09:00:00",
+    "issueId": 42
+  },
+  {
+    "id": 2,
+    "text": "Second comment with an update.",
+    "author": "Bob",
+    "createdAt": "2026-08-04T10:30:00",
+    "issueId": 42
+  }
+]
+```
+
+Returns an empty array `[]` if no comments exist for the issue.
+
+**Response - 500 Internal Server Error**
+
+Returned when an unexpected server error occurs.
+
+---
+
+### GET /api/comments/{commentId}
+
+Retrieves a specific comment by its unique ID.
+
+**Path Parameters**
+
+| Parameter | Type | Required | Description              |
+|-----------|------|----------|--------------------------||
+| commentId | Long | Yes      | The ID of the comment    |
+
+**Response - 200 OK**
+
+```json
+{
+  "id": 1,
+  "text": "This is a comment on the issue.",
+  "author": "Jane Doe",
+  "createdAt": "2026-08-04T10:30:00",
+  "issueId": 42
+}
+```
+
+**Response - 404 Not Found**
+
+Returned when no comment exists with the given ID.
+
+```json
+"Comment not found with ID: 1"
+```
+
+**Response - 500 Internal Server Error**
+
+Returned when an unexpected server error occurs.
+
+---
+
+## Comment Data Model
+
+| Field     | Type          | Description                                      |
+|-----------|---------------|--------------------------------------------------|
+| id        | Long          | Unique identifier for the comment (auto-generated) |
+| text      | String        | The content of the comment (must not be empty)   |
+| author    | String        | The name of the person who wrote the comment     |
+| createdAt | LocalDateTime | The timestamp when the comment was created (UTC) |
+| issueId   | Long          | The ID of the issue this comment belongs to      |
+
+---
+
+## Validation Rules
+
+- `text` must not be null, empty, or blank.
+- `author` must not be null, empty, or blank.
+- A comment must be associated with a valid `issueId`.
+
+---
+
+## Ordering
+
+Comments are always returned in **chronological order** (ascending by `createdAt` timestamp) when retrieved via `GET /api/issues/{issueId}/comments`.
+
+---
+
+## Backward Compatibility
+
+All existing Issue API endpoints remain fully backward compatible. No changes have been made to existing Issue request/response contracts.
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE comments (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    text       TEXT          NOT NULL,
+    author     VARCHAR(255)  NOT NULL,
+    created_at TIMESTAMP     NOT NULL,
+    issue_id   BIGINT        NOT NULL
+);
+
+CREATE INDEX idx_comment_issue_id  ON comments (issue_id);
+CREATE INDEX idx_comment_created_at ON comments (created_at);
+```
