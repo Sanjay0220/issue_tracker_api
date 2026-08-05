@@ -1,20 +1,28 @@
 # Issue Tracker API
 
-A RESTful Issue Tracker API built with Java and Spring Boot, enabling teams to manage issues and collaborate through comments.
+A RESTful API for tracking issues and enabling team collaboration through comments.
 
 ## Features
 
 - Create, update, assign, and close issues
 - Add comments to issues for team collaboration
 - Retrieve comments in chronological order
-- Input validation and error handling
+- Validation to prevent empty comments
+
+## Technology Stack
+
+- Java
+- Spring Boot
+- Maven
+- JPA / Hibernate
+- H2 Database (in-memory, development)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 17 or higher
-- Maven 3.6 or higher
+- Java 17+
+- Maven 3.8+
 
 ### Build and Run
 
@@ -32,10 +40,10 @@ The application starts on `http://localhost:8080`.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/issues | Retrieve all issues |
-| GET | /api/issues/{id} | Retrieve a specific issue |
+| GET | /api/issues | List all issues |
+| GET | /api/issues/{id} | Get issue by ID |
 | POST | /api/issues | Create a new issue |
-| PUT | /api/issues/{id} | Update an existing issue |
+| PUT | /api/issues/{id} | Update an issue |
 | DELETE | /api/issues/{id} | Delete an issue |
 
 ### Comments
@@ -43,20 +51,20 @@ The application starts on `http://localhost:8080`.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | /api/issues/{issueId}/comments | Add a comment to an issue |
-| GET | /api/issues/{issueId}/comments | Get all comments for an issue (chronological order) |
+| GET | /api/issues/{issueId}/comments | Get all comments for an issue |
 | GET | /api/comments/{commentId} | Get a specific comment by ID |
 
 ## Comment API Details
 
-### Create a Comment
+### Add a Comment
 
 **POST** `/api/issues/{issueId}/comments`
 
 **Request Body:**
 ```json
 {
-  "text": "This issue is reproducible on version 2.1.0",
-  "author": "jane.doe"
+  "author": "Jane Doe",
+  "commentText": "This issue has been reproduced on staging environment."
 }
 ```
 
@@ -64,24 +72,18 @@ The application starts on `http://localhost:8080`.
 ```json
 {
   "id": 1,
-  "text": "This issue is reproducible on version 2.1.0",
-  "author": "jane.doe",
-  "createdAt": "2024-01-15T10:30:00",
-  "issueId": 42
+  "issueId": 42,
+  "author": "Jane Doe",
+  "commentText": "This issue has been reproduced on staging environment.",
+  "createdAt": "2026-08-05T10:30:00"
 }
 ```
 
-**Validation Rules:**
-- `text` must not be blank or empty
-- `author` must not be blank or empty
+**Validation:**
+- `author` must not be blank (400 Bad Request returned if blank)
+- `commentText` must not be blank (400 Bad Request returned if blank)
 
-**Error Responses:**
-- `400 Bad Request` — if comment text or author is empty
-- `500 Internal Server Error` — unexpected server error
-
----
-
-### Get All Comments for an Issue
+### Get Comments for an Issue
 
 **GET** `/api/issues/{issueId}/comments`
 
@@ -90,24 +92,22 @@ The application starts on `http://localhost:8080`.
 [
   {
     "id": 1,
-    "text": "Initial investigation started.",
-    "author": "john.doe",
-    "createdAt": "2024-01-15T09:00:00",
-    "issueId": 42
+    "issueId": 42,
+    "author": "Jane Doe",
+    "commentText": "This issue has been reproduced on staging environment.",
+    "createdAt": "2026-08-05T10:30:00"
   },
   {
     "id": 2,
-    "text": "Root cause identified.",
-    "author": "jane.doe",
-    "createdAt": "2024-01-15T10:30:00",
-    "issueId": 42
+    "issueId": 42,
+    "author": "John Smith",
+    "commentText": "Working on a fix now.",
+    "createdAt": "2026-08-05T11:00:00"
   }
 ]
 ```
 
-Comments are returned in ascending chronological order by creation timestamp.
-
----
+Comments are always returned in chronological order (oldest first).
 
 ### Get a Specific Comment
 
@@ -117,57 +117,22 @@ Comments are returned in ascending chronological order by creation timestamp.
 ```json
 {
   "id": 1,
-  "text": "Initial investigation started.",
-  "author": "john.doe",
-  "createdAt": "2024-01-15T09:00:00",
-  "issueId": 42
+  "issueId": 42,
+  "author": "Jane Doe",
+  "commentText": "This issue has been reproduced on staging environment.",
+  "createdAt": "2026-08-05T10:30:00"
 }
 ```
 
-**Error Responses:**
-- `404 Not Found` — if the comment does not exist
-
----
-
-## Data Model
-
-### Comment
-
-| Field | Type | Description |
-|-------|------|-------------|
-| id | Long | Auto-generated primary key |
-| text | String | The comment content (required, non-empty) |
-| author | String | The author of the comment (required, non-empty) |
-| createdAt | LocalDateTime | Timestamp set automatically on creation |
-| issueId | Long | Foreign key reference to the associated issue |
+**Error Response (404 Not Found):**
+```
+Comment not found with id: 1
+```
 
 ## Backward Compatibility
 
-All existing Issue API endpoints remain fully backward compatible. No changes have been made to existing Issue request or response structures.
+All existing Issue API endpoints remain fully functional and unchanged. The comment feature is implemented as an additive extension and does not modify any existing Issue API contracts.
 
-## Database
+## License
 
-The application uses an in-memory H2 database by default. The schema is automatically managed by Hibernate (`spring.jpa.hibernate.ddl-auto=update`).
-
-### Comment Table
-
-```sql
-CREATE TABLE comments (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    text TEXT NOT NULL,
-    author VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    issue_id BIGINT NOT NULL
-);
-
-CREATE INDEX idx_comment_issue_id ON comments (issue_id);
-CREATE INDEX idx_comment_created_at ON comments (created_at);
-```
-
-## H2 Console
-
-Available at `http://localhost:8080/h2-console` (development only).
-
-- JDBC URL: `jdbc:h2:mem:issuetracker`
-- Username: `sa`
-- Password: *(empty)*
+This project is licensed under the MIT License.

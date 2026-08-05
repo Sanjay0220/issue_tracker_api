@@ -3,12 +3,13 @@ package com.issuetracker.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDateTime;
 
 /**
- * Entity representing a comment associated with an issue.
+ * Entity representing a comment associated with an Issue.
  * Each comment captures the author, timestamp, and comment text,
- * and is associated with exactly one issue.
+ * and is associated with exactly one Issue.
  */
 @Entity
 @Table(name = "comments", indexes = {
@@ -21,20 +22,20 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank(message = "Comment text must not be empty")
-    @Column(name = "text", nullable = false, columnDefinition = "TEXT")
-    private String text;
-
-    @NotBlank(message = "Author must not be empty")
-    @Column(name = "author", nullable = false)
-    private String author;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
     @NotNull(message = "Issue ID must not be null")
     @Column(name = "issue_id", nullable = false)
     private Long issueId;
+
+    @NotBlank(message = "Author must not be blank")
+    @Column(name = "author", nullable = false)
+    private String author;
+
+    @NotBlank(message = "Comment text must not be blank")
+    @Column(name = "comment_text", nullable = false, columnDefinition = "TEXT")
+    private String commentText;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     /**
      * Default constructor required by JPA.
@@ -45,111 +46,74 @@ public class Comment {
     /**
      * Constructs a Comment with all required fields.
      *
-     * @param text    the comment text
-     * @param author  the author of the comment
-     * @param issueId the ID of the issue this comment belongs to
+     * @param issueId     the ID of the associated issue
+     * @param author      the author of the comment
+     * @param commentText the text content of the comment
      */
-    public Comment(String text, String author, Long issueId) {
-        this.text = text;
-        this.author = author;
+    public Comment(Long issueId, String author, String commentText) {
         this.issueId = issueId;
-    }
-
-    /**
-     * Sets the createdAt timestamp before persisting.
-     */
-    @PrePersist
-    protected void onCreate() {
+        this.author = author;
+        this.commentText = commentText;
         this.createdAt = LocalDateTime.now();
     }
 
     /**
-     * Returns the comment ID.
-     *
-     * @return the comment ID
+     * Sets the createdAt timestamp before persisting a new entity.
      */
+    @PrePersist
+    protected void onCreate() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
+    }
+
     public Long getId() {
         return id;
     }
 
-    /**
-     * Sets the comment ID.
-     *
-     * @param id the comment ID
-     */
     public void setId(Long id) {
         this.id = id;
     }
 
-    /**
-     * Returns the comment text.
-     *
-     * @return the comment text
-     */
-    public String getText() {
-        return text;
-    }
-
-    /**
-     * Sets the comment text.
-     *
-     * @param text the comment text
-     */
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    /**
-     * Returns the author of the comment.
-     *
-     * @return the author
-     */
-    public String getAuthor() {
-        return author;
-    }
-
-    /**
-     * Sets the author of the comment.
-     *
-     * @param author the author
-     */
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-
-    /**
-     * Returns the timestamp when the comment was created.
-     *
-     * @return the creation timestamp
-     */
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    /**
-     * Sets the creation timestamp.
-     *
-     * @param createdAt the creation timestamp
-     */
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    /**
-     * Returns the ID of the issue this comment is associated with.
-     *
-     * @return the issue ID
-     */
     public Long getIssueId() {
         return issueId;
     }
 
-    /**
-     * Sets the issue ID this comment is associated with.
-     *
-     * @param issueId the issue ID
-     */
     public void setIssueId(Long issueId) {
         this.issueId = issueId;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getCommentText() {
+        return commentText;
+    }
+
+    public void setCommentText(String commentText) {
+        this.commentText = commentText;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    @Override
+    public String toString() {
+        return "Comment{" +
+                "id=" + id +
+                ", issueId=" + issueId +
+                ", author='" + author + '\'' +
+                ", createdAt=" + createdAt +
+                '}';
     }
 }

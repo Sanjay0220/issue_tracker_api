@@ -1,7 +1,7 @@
 package com.issuetracker.controller;
 
-import com.issuetracker.dto.CommentRequestDTO;
-import com.issuetracker.dto.CommentResponseDTO;
+import com.issuetracker.dto.CommentDTO;
+import com.issuetracker.dto.CreateCommentRequest;
 import com.issuetracker.exception.EmptyCommentException;
 import com.issuetracker.service.CommentService;
 import jakarta.validation.Valid;
@@ -15,8 +15,9 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * REST controller for managing comments on issues.
- * Provides endpoints to create and retrieve comments associated with issues.
+ * REST controller for managing comments associated with issues.
+ * Exposes endpoints to create and retrieve comments while preserving
+ * backward compatibility with existing Issue APIs.
  */
 @RestController
 @RequestMapping("/api")
@@ -36,50 +37,47 @@ public class CommentController {
     }
 
     /**
-     * Creates a new comment on the specified issue.
+     * Creates a new comment for the specified issue.
      *
-     * @param issueId           the ID of the issue to add the comment to
-     * @param commentRequestDTO the request body containing comment text and author
-     * @return HTTP 201 Created with the created comment, or HTTP 400 if validation fails,
-     *         or HTTP 404 if the issue does not exist
+     * @param issueId the ID of the issue to add the comment to
+     * @param request the request body containing author and comment text
+     * @return HTTP 201 Created with the created CommentDTO, or an error response
      */
     @PostMapping("/issues/{issueId}/comments")
     public ResponseEntity<?> createComment(
             @PathVariable Long issueId,
-            @Valid @RequestBody CommentRequestDTO commentRequestDTO) {
-        logger.info("POST /api/issues/{}/comments - Creating comment", issueId);
+            @Valid @RequestBody CreateCommentRequest request) {
+        logger.info("POST /api/issues/{}/comments - author={}", issueId, request.getAuthor());
         try {
-            CommentResponseDTO response = commentService.createComment(issueId, commentRequestDTO);
-            logger.info("Comment created with id={} for issueId={}", response.getId(), issueId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (EmptyCommentException ex) {
-            logger.warn("Empty comment creation attempted for issueId={}: {}", issueId, ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        } catch (IllegalArgumentException ex) {
-            logger.warn("Invalid comment request for issueId={}: {}", issueId, ex.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
-        } catch (Exception ex) {
-            logger.error("Unexpected error creating comment for issueId={}: {}", issueId, ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+            CommentDTO created = commentService.createComment(issueId, request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        } catch (EmptyCommentException e) {
+            logger.warn("Empty comment submission for issueId={}: {}", issueId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid comment request for issueId={}: {}", issueId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error creating comment for issueId={}: {}", issueId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
 
     /**
      * Retrieves all comments for the specified issue in chronological order.
      *
-     * @param issueId the ID of the issue
-     * @return HTTP 200 OK with the list of comments in chronological order
+     * @param issueId the ID of the issue whose comments are to be retrieved
+     * @return HTTP 200 OK with a list of CommentDTOs ordered by creation time
      */
     @GetMapping("/issues/{issueId}/comments")
     public ResponseEntity<?> getCommentsByIssueId(@PathVariable Long issueId) {
-        logger.info("GET /api/issues/{}/comments - Retrieving comments", issueId);
+        logger.info("GET /api/issues/{}/comments", issueId);
         try {
-            List<CommentResponseDTO> comments = commentService.getCommentsByIssueId(issueId);
-            logger.info("Returning {} comment(s) for issueId={}", comments.size(), issueId);
+            List<CommentDTO> comments = commentService.getCommentsByIssueId(issueId);
             return ResponseEntity.ok(comments);
-        } catch (Exception ex) {
-            logger.error("Unexpected error retrieving comments for issueId={}: {}", issueId, ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+        } catch (Exception e) {
+            logger.error("Unexpected error retrieving comments for issueId={}: {}", issueId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
 
@@ -87,21 +85,20 @@ public class CommentController {
      * Retrieves a specific comment by its ID.
      *
      * @param commentId the ID of the comment to retrieve
-     * @return HTTP 200 OK with the comment, or HTTP 404 if not found
+     * @return HTTP 200 OK with the CommentDTO, or HTTP 404 if not found
      */
     @GetMapping("/comments/{commentId}")
     public ResponseEntity<?> getCommentById(@PathVariable Long commentId) {
-        logger.info("GET /api/comments/{} - Retrieving comment", commentId);
+        logger.info("GET /api/comments/{}", commentId);
         try {
-            CommentResponseDTO comment = commentService.getCommentById(commentId);
-            logger.info("Comment retrieved with id={}", commentId);
+            CommentDTO comment = commentService.getCommentById(commentId);
             return ResponseEntity.ok(comment);
-        } catch (NoSuchElementException ex) {
-            logger.warn("Comment not found with id={}: {}", commentId, ex.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
-        } catch (Exception ex) {
-            logger.error("Unexpected error retrieving comment with id={}: {}", commentId, ex.getMessage(), ex);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred");
+        } catch (NoSuchElementException e) {
+            logger.warn("Comment not found with id={}: {}", commentId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error retrieving comment with id={}: {}", commentId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
         }
     }
 }

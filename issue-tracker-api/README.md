@@ -1,8 +1,8 @@
-# Issue Tracker API — Developer Guide
+# Issue Tracker API - Module Documentation
 
-This document provides technical documentation for the Issue Tracker API, including entity structures, API endpoint specifications, request/response formats, validation rules, and backward compatibility notes.
+This module contains the Spring Boot application for the Issue Tracker API.
 
-## Project Structure
+## Module Structure
 
 ```
 issue-tracker-api/
@@ -13,8 +13,8 @@ issue-tracker-api/
 │       │       ├── controller/
 │       │       │   └── CommentController.java
 │       │       ├── dto/
-│       │       │   ├── CommentRequestDTO.java
-│       │       │   └── CommentResponseDTO.java
+│       │       │   ├── CommentDTO.java
+│       │       │   └── CreateCommentRequest.java
 │       │       ├── entity/
 │       │       │   └── Comment.java
 │       │       ├── exception/
@@ -30,171 +30,148 @@ issue-tracker-api/
 
 ## Comment Feature
 
-### Overview
+The comment feature enables team members to collaborate directly within an issue by adding timestamped comments.
 
-The comment feature enables project team members to collaborate directly within issues. Comments are associated with a single issue, captured with author, timestamp, and comment text, and displayed in chronological order.
+### Data Model
 
-### Comment Entity
+The `Comment` entity contains the following fields:
 
-| Field | Column | Type | Constraints |
-|-------|--------|------|-------------|
-| id | id | BIGINT | Primary Key, Auto-generated |
-| text | text | TEXT | NOT NULL, non-empty |
-| author | author | VARCHAR(255) | NOT NULL, non-empty |
-| createdAt | created_at | TIMESTAMP | NOT NULL, set on persist |
-| issueId | issue_id | BIGINT | NOT NULL, references Issue |
+| Field | Type | Description |
+|-------|------|-------------|
+| id | Long | Auto-generated primary key |
+| issueId | Long | Foreign key referencing the associated issue |
+| author | String | Name of the comment author |
+| commentText | String | Text content of the comment |
+| createdAt | LocalDateTime | Timestamp when the comment was created |
 
 ### Database Schema
+
+The following table and indexes are created automatically by JPA/Hibernate:
 
 ```sql
 CREATE TABLE comments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    text TEXT NOT NULL,
+    issue_id BIGINT NOT NULL,
     author VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP NOT NULL,
-    issue_id BIGINT NOT NULL
+    comment_text TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL
 );
 
 CREATE INDEX idx_comment_issue_id ON comments (issue_id);
 CREATE INDEX idx_comment_created_at ON comments (created_at);
 ```
 
-## API Endpoints
+### API Endpoints
 
-### POST /api/issues/{issueId}/comments
+#### POST /api/issues/{issueId}/comments
 
-Creates a new comment on the specified issue.
+Creates a new comment for the specified issue.
 
 **Path Parameters:**
-- `issueId` (Long, required) — the ID of the issue
+- `issueId` (Long, required) - The ID of the issue to comment on
 
 **Request Body:**
 ```json
 {
-  "text": "This is a comment on the issue.",
-  "author": "john.doe"
+  "author": "Jane Doe",
+  "commentText": "Investigation complete. Root cause identified."
 }
 ```
 
-**Validation:**
-- `text` — required, must not be blank or empty
-- `author` — required, must not be blank or empty
-
-**Responses:**
-
-| Status | Description |
-|--------|-------------|
-| 201 Created | Comment created successfully |
-| 400 Bad Request | Validation failure (empty text or author) |
-| 500 Internal Server Error | Unexpected server error |
-
-**Response Body (201):**
+**Success Response (201 Created):**
 ```json
 {
   "id": 1,
-  "text": "This is a comment on the issue.",
-  "author": "john.doe",
-  "createdAt": "2024-01-15T10:30:00",
-  "issueId": 42
+  "issueId": 10,
+  "author": "Jane Doe",
+  "commentText": "Investigation complete. Root cause identified.",
+  "createdAt": "2026-08-05T14:00:00"
 }
 ```
 
----
+**Error Responses:**
+- `400 Bad Request` - When `author` or `commentText` is blank or missing
 
-### GET /api/issues/{issueId}/comments
+#### GET /api/issues/{issueId}/comments
 
-Retrieves all comments for the specified issue in chronological order (ascending by `createdAt`).
+Retrieves all comments for the specified issue in chronological order (oldest first).
 
 **Path Parameters:**
-- `issueId` (Long, required) — the ID of the issue
+- `issueId` (Long, required) - The ID of the issue
 
-**Responses:**
-
-| Status | Description |
-|--------|-------------|
-| 200 OK | List of comments returned (may be empty) |
-| 500 Internal Server Error | Unexpected server error |
-
-**Response Body (200):**
+**Success Response (200 OK):**
 ```json
 [
   {
     "id": 1,
-    "text": "First comment.",
-    "author": "alice",
-    "createdAt": "2024-01-15T08:00:00",
-    "issueId": 42
+    "issueId": 10,
+    "author": "Jane Doe",
+    "commentText": "Investigation complete. Root cause identified.",
+    "createdAt": "2026-08-05T14:00:00"
   },
   {
     "id": 2,
-    "text": "Second comment.",
-    "author": "bob",
-    "createdAt": "2024-01-15T09:30:00",
-    "issueId": 42
+    "issueId": 10,
+    "author": "John Smith",
+    "commentText": "Fix deployed to staging.",
+    "createdAt": "2026-08-05T15:30:00"
   }
 ]
 ```
 
----
+Returns an empty array `[]` if no comments exist for the issue.
 
-### GET /api/comments/{commentId}
+#### GET /api/comments/{commentId}
 
 Retrieves a specific comment by its unique ID.
 
 **Path Parameters:**
-- `commentId` (Long, required) — the ID of the comment
+- `commentId` (Long, required) - The ID of the comment
 
-**Responses:**
-
-| Status | Description |
-|--------|-------------|
-| 200 OK | Comment found and returned |
-| 404 Not Found | No comment exists with the given ID |
-| 500 Internal Server Error | Unexpected server error |
-
-**Response Body (200):**
+**Success Response (200 OK):**
 ```json
 {
   "id": 1,
-  "text": "First comment.",
-  "author": "alice",
-  "createdAt": "2024-01-15T08:00:00",
-  "issueId": 42
+  "issueId": 10,
+  "author": "Jane Doe",
+  "commentText": "Investigation complete. Root cause identified.",
+  "createdAt": "2026-08-05T14:00:00"
 }
 ```
 
----
+**Error Responses:**
+- `404 Not Found` - When no comment exists with the given ID
 
-## Validation Rules
+### Validation Rules
 
 | Field | Rule | Error |
 |-------|------|-------|
-| text | Must not be null, blank, or empty | 400 Bad Request |
-| author | Must not be null, blank, or empty | 400 Bad Request |
+| author | Must not be blank | 400 Bad Request |
+| commentText | Must not be blank | 400 Bad Request |
 
-## Backward Compatibility
+### Backward Compatibility
 
-The introduction of the comment feature does not modify any existing Issue API endpoints. All existing Issue request and response structures remain unchanged. The `comments` table is a new addition to the database schema and does not alter existing tables.
+The comment feature is implemented as a purely additive extension. No existing Issue API endpoints have been modified. All existing clients continue to function without any changes.
 
-## Chronological Ordering
+### Architecture
 
-Comments are always returned in ascending order of their `created_at` timestamp. This is enforced at the repository layer via `findByIssueIdOrderByCreatedAtAsc`.
+The comment feature follows the standard layered architecture:
 
-## Error Handling
-
-| Exception | HTTP Status | Description |
-|-----------|-------------|-------------|
-| EmptyCommentException | 400 Bad Request | Comment text is blank or empty |
-| IllegalArgumentException | 400 Bad Request | Author is blank or empty |
-| NoSuchElementException | 404 Not Found | Comment not found by ID |
-| Exception | 500 Internal Server Error | Unexpected server error |
+- **Controller** (`CommentController`) - Handles HTTP requests and responses
+- **Service** (`CommentService`) - Contains business logic and validation
+- **Repository** (`CommentRepository`) - Handles data persistence via Spring Data JPA
+- **Entity** (`Comment`) - JPA entity mapped to the `comments` database table
+- **DTOs** (`CommentDTO`, `CreateCommentRequest`) - Data transfer objects for API contracts
+- **Exception** (`EmptyCommentException`) - Domain-specific exception for empty comment validation
 
 ## Configuration
 
-Key properties in `application.properties`:
+Key configuration properties in `application.properties`:
 
 ```properties
 spring.jpa.hibernate.ddl-auto=update
 spring.datasource.url=jdbc:h2:mem:issuetracker
-logging.level.com.issuetracker=INFO
+spring.jpa.show-sql=true
 ```
+
+For production deployments, replace the H2 in-memory datasource with a persistent database (e.g., PostgreSQL, MySQL) and set `spring.jpa.hibernate.ddl-auto=validate` or use a migration tool such as Flyway or Liquibase.

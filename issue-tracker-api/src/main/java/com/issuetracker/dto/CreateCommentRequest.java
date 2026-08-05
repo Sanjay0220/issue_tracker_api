@@ -3,15 +3,16 @@ package com.issuetracker.dto;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Data Transfer Object representing the request body for creating a new comment.
+ * Data Transfer Object for creating a new comment.
+ * Carries the author and comment text submitted by the API consumer.
  */
 public class CreateCommentRequest {
 
-    @NotBlank(message = "Comment text must not be empty")
-    private String text;
-
-    @NotBlank(message = "Author must not be empty")
+    @NotBlank(message = "Author must not be blank")
     private String author;
+
+    @NotBlank(message = "Comment text must not be blank")
+    private String commentText;
 
     /**
      * Default constructor.
@@ -20,49 +21,36 @@ public class CreateCommentRequest {
     }
 
     /**
-     * Constructs a CreateCommentRequest with all fields.
+     * Constructs a CreateCommentRequest with the specified author and comment text.
      *
-     * @param text   the comment text
-     * @param author the author of the comment
+     * @param author      the author of the comment
+     * @param commentText the text content of the comment
      */
-    public CreateCommentRequest(String text, String author) {
-        this.text = text;
+    public CreateCommentRequest(String author, String commentText) {
         this.author = author;
+        this.commentText = commentText;
     }
 
-    /**
-     * Returns the comment text.
-     *
-     * @return the comment text
-     */
-    public String getText() {
-        return text;
-    }
-
-    /**
-     * Sets the comment text.
-     *
-     * @param text the comment text
-     */
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    /**
-     * Returns the author of the comment.
-     *
-     * @return the author
-     */
     public String getAuthor() {
         return author;
     }
 
-    /**
-     * Sets the author of the comment.
-     *
-     * @param author the author
-     */
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getCommentText() {
+        return commentText;
+    }
+
+    public void setCommentText(String commentText) {
+        this.commentText = commentText;
+    }
+
+    @Override
+    public String toString() {
+        return "CreateCommentRequest{" +
+                "author='" + author + '\'' +
+                '}';
     }
 }
