@@ -8,25 +8,18 @@ import java.util.List;
 
 /**
  * Repository interface for Comment entity persistence operations.
- * Provides CRUD operations and custom query methods for comments.
+ * Provides methods to query comments associated with a specific issue
+ * in chronological order.
  */
 @Repository
 public interface CommentRepository extends JpaRepository<Comment, Long> {
 
     /**
-     * Retrieves all comments associated with a specific issue,
+     * Retrieves all comments associated with the given issue ID,
      * ordered by creation timestamp in ascending (chronological) order.
      *
-     * @param issueId the ID of the issue
-     * @return list of comments for the issue in chronological order
+     * @param issueId the ID of the issue whose comments are to be retrieved
+     * @return a list of comments ordered by createdAt ascending
      */
     List<Comment> findByIssueIdOrderByCreatedAtAsc(Long issueId);
-
-    /**
-     * Checks whether any comments exist for a given issue ID.
-     *
-     * @param issueId the ID of the issue
-     * @return true if at least one comment exists for the issue
-     */
-    boolean existsByIssueId(Long issueId);
 }

@@ -1,66 +1,81 @@
 # Issue Tracker API
 
-A RESTful API for tracking issues and enabling team collaboration through comments.
+A Spring Boot REST API for tracking issues and enabling team collaboration through issue comments.
 
 ## Features
 
 - Create, update, assign, and close issues
 - Add comments to issues for team collaboration
 - Retrieve comments in chronological order
-- Validation to prevent empty comments
+- Input validation and error handling
+- RESTful API design
 
 ## Technology Stack
 
-- Java
-- Spring Boot
+- Java 17
+- Spring Boot 3.2.0
+- Spring Data JPA
+- Spring Validation (Bean Validation / JSR-380)
+- H2 In-Memory Database
 - Maven
-- JPA / Hibernate
-- H2 Database (in-memory, development)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Java 17+
-- Maven 3.8+
+- Java 17 or higher
+- Maven 3.6 or higher
 
-### Build and Run
+### Running the Application
 
 ```bash
 cd issue-tracker-api
-mvn clean install
 mvn spring-boot:run
 ```
 
-The application starts on `http://localhost:8080`.
+The application will start on `http://localhost:8080`.
+
+### H2 Console
+
+Access the H2 in-memory database console at:
+
+```
+http://localhost:8080/h2-console
+```
+
+JDBC URL: `jdbc:h2:mem:issuetracker`
+Username: `sa`
+Password: *(leave blank)*
 
 ## API Endpoints
 
-### Issues
+### Issue Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | /api/issues | List all issues |
-| GET | /api/issues/{id} | Get issue by ID |
-| POST | /api/issues | Create a new issue |
-| PUT | /api/issues/{id} | Update an issue |
-| DELETE | /api/issues/{id} | Delete an issue |
+| GET | `/api/issues` | Retrieve all issues |
+| GET | `/api/issues/{id}` | Retrieve a specific issue by ID |
+| POST | `/api/issues` | Create a new issue |
+| PUT | `/api/issues/{id}` | Update an existing issue |
+| DELETE | `/api/issues/{id}` | Delete an issue |
 
-### Comments
+### Comment Endpoints
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | /api/issues/{issueId}/comments | Add a comment to an issue |
-| GET | /api/issues/{issueId}/comments | Get all comments for an issue |
-| GET | /api/comments/{commentId} | Get a specific comment by ID |
+| POST | `/api/issues/{issueId}/comments` | Add a comment to an issue |
+| GET | `/api/issues/{issueId}/comments` | Retrieve all comments for an issue (chronological order) |
 
-## Comment API Details
+## Comment Feature
+
+The comments feature allows project team members to collaborate directly within an issue.
 
 ### Add a Comment
 
 **POST** `/api/issues/{issueId}/comments`
 
 **Request Body:**
+
 ```json
 {
   "author": "Jane Doe",
@@ -69,70 +84,87 @@ The application starts on `http://localhost:8080`.
 ```
 
 **Response (201 Created):**
+
 ```json
 {
   "id": 1,
-  "issueId": 42,
   "author": "Jane Doe",
   "commentText": "This issue has been reproduced on staging environment.",
-  "createdAt": "2026-08-05T10:30:00"
+  "createdAt": "2026-08-06T10:30:00",
+  "issueId": 42
 }
 ```
-
-**Validation:**
-- `author` must not be blank (400 Bad Request returned if blank)
-- `commentText` must not be blank (400 Bad Request returned if blank)
 
 ### Get Comments for an Issue
 
 **GET** `/api/issues/{issueId}/comments`
 
 **Response (200 OK):**
+
 ```json
 [
   {
     "id": 1,
-    "issueId": 42,
     "author": "Jane Doe",
     "commentText": "This issue has been reproduced on staging environment.",
-    "createdAt": "2026-08-05T10:30:00"
+    "createdAt": "2026-08-06T10:30:00",
+    "issueId": 42
   },
   {
     "id": 2,
-    "issueId": 42,
     "author": "John Smith",
-    "commentText": "Working on a fix now.",
-    "createdAt": "2026-08-05T11:00:00"
+    "commentText": "Fix is in progress, targeting next sprint.",
+    "createdAt": "2026-08-06T11:15:00",
+    "issueId": 42
   }
 ]
 ```
 
-Comments are always returned in chronological order (oldest first).
+### Validation Rules
 
-### Get a Specific Comment
+- `author` must not be blank
+- `commentText` must not be empty or blank
+- Requests with empty comment text will receive a `400 Bad Request` response
 
-**GET** `/api/comments/{commentId}`
+### Backward Compatibility
 
-**Response (200 OK):**
-```json
-{
-  "id": 1,
-  "issueId": 42,
-  "author": "Jane Doe",
-  "commentText": "This issue has been reproduced on staging environment.",
-  "createdAt": "2026-08-05T10:30:00"
-}
+All existing Issue API endpoints remain fully functional and unchanged. The comments feature is purely additive and does not introduce any breaking changes to existing clients.
+
+## Error Handling
+
+| HTTP Status | Scenario |
+|-------------|----------|
+| 201 Created | Comment successfully created |
+| 200 OK | Comments successfully retrieved |
+| 400 Bad Request | Validation failure (e.g., empty comment text or blank author) |
+| 404 Not Found | Issue not found for the given issueId |
+
+## Project Structure
+
 ```
-
-**Error Response (404 Not Found):**
+issue-tracker-api/
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── com/issuetracker/
+│       │       ├── controller/
+│       │       │   ├── IssueController.java
+│       │       │   └── CommentController.java
+│       │       ├── service/
+│       │       │   ├── IssueService.java
+│       │       │   └── CommentService.java
+│       │       ├── repository/
+│       │       │   ├── IssueRepository.java
+│       │       │   └── CommentRepository.java
+│       │       ├── entity/
+│       │       │   ├── Issue.java
+│       │       │   └── Comment.java
+│       │       ├── dto/
+│       │       │   ├── CommentRequestDTO.java
+│       │       │   └── CommentResponseDTO.java
+│       │       └── exception/
+│       │           └── EmptyCommentException.java
+│       └── resources/
+│           └── application.properties
+└── pom.xml
 ```
-Comment not found with id: 1
-```
-
-## Backward Compatibility
-
-All existing Issue API endpoints remain fully functional and unchanged. The comment feature is implemented as an additive extension and does not modify any existing Issue API contracts.
-
-## License
-
-This project is licensed under the MIT License.

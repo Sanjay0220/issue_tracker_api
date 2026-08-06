@@ -3,16 +3,16 @@ package com.issuetracker.dto;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Data Transfer Object for creating a new comment on an issue.
+ * Data Transfer Object for incoming comment creation requests.
  * Captures the author and comment text provided by the client.
  */
 public class CommentRequestDTO {
 
-    @NotBlank(message = "Comment text must not be empty")
-    private String text;
-
-    @NotBlank(message = "Author must not be empty")
+    @NotBlank(message = "Author must not be blank")
     private String author;
+
+    @NotBlank(message = "Comment text must not be empty")
+    private String commentText;
 
     /**
      * Default constructor.
@@ -21,49 +21,29 @@ public class CommentRequestDTO {
     }
 
     /**
-     * Constructs a CommentRequestDTO with text and author.
+     * Constructs a CommentRequestDTO with the specified author and comment text.
      *
-     * @param text   the comment text
-     * @param author the author of the comment
+     * @param author      the author of the comment
+     * @param commentText the text content of the comment
      */
-    public CommentRequestDTO(String text, String author) {
-        this.text = text;
+    public CommentRequestDTO(String author, String commentText) {
         this.author = author;
+        this.commentText = commentText;
     }
 
-    /**
-     * Returns the comment text.
-     *
-     * @return the comment text
-     */
-    public String getText() {
-        return text;
-    }
-
-    /**
-     * Sets the comment text.
-     *
-     * @param text the comment text
-     */
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    /**
-     * Returns the author of the comment.
-     *
-     * @return the author
-     */
     public String getAuthor() {
         return author;
     }
 
-    /**
-     * Sets the author of the comment.
-     *
-     * @param author the author
-     */
     public void setAuthor(String author) {
         this.author = author;
+    }
+
+    public String getCommentText() {
+        return commentText;
+    }
+
+    public void setCommentText(String commentText) {
+        this.commentText = commentText;
     }
 }
